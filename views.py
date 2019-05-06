@@ -1,5 +1,5 @@
-from sqlalchemy import create_engine
-from database_setup import Base, SportCatagory, Item, User
+from sqlalchemy import create_engine, desc
+from database_setup import Base, SportCatagory, Item
 from flask import session as login_session
 from sqlalchemy.orm import sessionmaker
 from flask import Flask, render_template, request, redirect, jsonify, url_for, flash
@@ -7,6 +7,7 @@ from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 import httplib2
 import json
+from datetime import datetime
 import random
 import string
 from flask import make_response
@@ -27,9 +28,9 @@ CLIENT_ID = json.loads(
 def showCatalog():
 	"""Show catalogs"""
 	sports = session.query(SportCatagory).all()
-	items = session.query(Item).all()
+	items = session.query(Item).order_by(desc(Item.time_updated)).limit(6)
 	for item in items:
-		print(item.name)
+		print(item.name, item.time_updated)
 	if 'username' not in login_session:
 		return render_template('publicsports.html', sports=sports, items = items)
 	else:
@@ -81,14 +82,6 @@ def gconnect():
         response.headers['Content-Type'] = 'application/json'
         return response
 
-    # Verify that the access token is used for the intended user.
-    gplus_id = credentials.id_token['sub']
-    if result['user_id'] != gplus_id:
-        response = make_response(
-            json.dumps("Token's user ID doesn't match given user ID."), 401)
-        response.headers['Content-Type'] = 'application/json'
-        return response
-
     # Verify that the access token is valid for this app.
     if result['issued_to'] != CLIENT_ID:
         response = make_response(
@@ -107,7 +100,6 @@ def gconnect():
 
     # Store the access token in the session for later use.
     login_session['access_token'] = credentials.access_token
-    login_session['gplus_id'] = gplus_id
 
     # Get user info
     userinfo_url = "https://www.googleapis.com/oauth2/v1/userinfo"
@@ -122,12 +114,6 @@ def gconnect():
     # ADD PROVIDER TO LOGIN SESSION
     login_session['provider'] = 'google'
 
-    # see if user exists, if it doesn't make a new one
-    user_id = getUserID(data["email"])
-    if not user_id:
-        user_id = createUser(login_session)
-    login_session['user_id'] = user_id
-
     output = ''
     output += '<h1>Welcome, '
     output += login_session['username']
@@ -139,52 +125,26 @@ def gconnect():
     print "done!"
     return output
 
-
-def createUser(login_session):
-    newUser = User(name=login_session['username'], email=login_session[
-                   'email'], picture=login_session['picture'])
-    session.add(newUser)
-    session.commit()
-    user = session.query(User).filter_by(email=login_session['email']).one()
-    return user.id
-
-
-def getUserID(email):
-    try:
-        user = session.query(User).filter_by(email=email).one()
-        return user.id
-    except:
-        return None
-
-
-def getUserInfo(user_id):
-    user = session.query(User).filter_by(id=1).one()
-    return user
-
-
-
 #Show items for given sport catagory
 @app.route('/catalog/<string:sport_name>/items/')
 def showItem(sport_name):
-	sport = session.query(SportCatagory).filter_by(name=sport_name).one()
-	creator = getUserInfo(sport.user_id)
+	sports = session.query(SportCatagory).all()
 	items = session.query(Item).filter_by(sport_name=sport_name).all()
 	if 'username' not in login_session:
-		return render_template('publicitems.html', items=items, sport=sport, creator=creator)
+		return render_template('publicitems.html', items=items, sports=sports, selected_sport = sport_name)
 	else:
-		return render_template('item.html', items=items, sport=sport, creator=creator)
+		return render_template('item.html', items=items, sports=sports, selected_sport = sport_name)
 
 
 #Show item description for given item
 @app.route('/catalog/<string:sport_name>/<string:item_name>')
 def showItemDescription(sport_name, item_name):
 	sport = session.query(SportCatagory).filter_by(name=sport_name).one()
-	creator = getUserInfo(sport.user_id)
 	item = session.query(Item).filter_by(name=item_name).one()
 	if 'username' not in login_session:
-		return render_template('publicitemdescription.html', item=item, creator=creator)
+		return render_template('publicitemdescription.html', item=item)
 	else:
-		return render_template('itemdescription.html', item=item, creator=creator)
+		return render_template('itemdescription.html', item=item)
 
 #add new item 
 @app.route('/catalog/new', methods=['GET', 'POST'])
@@ -195,7 +155,7 @@ def newItem():
 		sport_name = str(request.form.get('category'))
 		print(sport_name)
 		sport  = session.query(SportCatagory).filter_by(name=sport_name).one()
-		newItem = Item(user_id=login_session['user_id'], name=request.form['name'], description=request.form['description'], sport=sport)
+		newItem = Item(name=request.form['name'], description=request.form['description'], time_updated = datetime.now(), sport=sport)
 		session.add(newItem)
 		session.commit()
 		flash('New Item %s Item Successfully Created' % (newItem.name))
@@ -210,8 +170,6 @@ def editItem(item_name):
     editedItem = session.query(Item).filter_by(name=item_name).one()
     if 'username' not in login_session:
         return redirect('/login')
-    if editedItem.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to edit this item. Please create your own item in order to edit.');}</script><body onload='myFunction()'>"
     if request.method == 'POST':
         if request.form['name']:
             editedItem.name = request.form['name']
@@ -247,7 +205,6 @@ def disconnect():
     if 'provider' in login_session:
         if login_session['provider'] == 'google':
             gdisconnect()
-            del login_session['gplus_id']
             del login_session['access_token']
         if login_session['provider'] == 'facebook':
             fbdisconnect()
@@ -255,7 +212,6 @@ def disconnect():
         del login_session['username']
         del login_session['email']
         del login_session['picture']
-        del login_session['user_id']
         del login_session['provider']
         flash("You have successfully been logged out.")
         return redirect(url_for('showCatalog'))
@@ -287,9 +243,22 @@ def gdisconnect():
         return response
 
 
-
+@app.route('/catalogs/JSON')
+def catalogsJSON():
+    sports = session.query(SportCatagory).all()
+    items = session.query(Item).all()
+    catalogsJSONobject = catalogObject(sports, items)
+    return jsonify(sports=[r.serialize for r in sports])
 
 # User Helper Functions
+class catalogObject:
+
+	def __init__(self, sports, items):
+		self.sports = sports
+		self.items = items
+
+	def getDetails():
+		
 
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
