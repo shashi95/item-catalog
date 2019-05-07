@@ -1,0 +1,64 @@
+html{
+    background-color: grey;
+}
+.navbar-default {
+    background-color: #1e0159;
+    border-color: grey;
+    width: 100%;
+}
+.navbar-brand {
+    color: white;
+    font-size: 30px;
+}
+.container {
+    width:100%;
+    height:100%;
+    background-color: grey;
+}
+
+.sport-col {
+    background-color: white;
+    border-style: solid; 
+    border-width: thin;
+    padding-bottom: 20px;
+    padding-top: 20px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.col1 {
+    border-right: solid;
+    border-width: thin;
+    border-right-color: grey;
+}
+.col2 {
+    padding-left: 50px;
+}
+
+a{
+    color: red;
+}
+p {
+     color: black; 
+     font-style: normal;
+}
+.wrapper {
+    text-align: center;
+}
+
+.button {
+    position: absolute;
+    top: 50%;
+}
+.flash {
+    background-color: #ffd700;
+    width:100%;
+    text-decoration: none;
+
+}
+
+.flash li {
+    list-style-type: none;
+    text-align: center;
+
+}

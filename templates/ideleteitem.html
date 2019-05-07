@@ -10,8 +10,14 @@
 				<h4><b>Delete Item</b></h4>
 				<p>Are you sure you want to delete ?</p>
 				<form action="#" method = 'post'>
-					<button type="submit" class="btn btn-danger" id="submit" type="submit">submit</button>
-				</form>
+
+	<button type="submit" class="btn btn-default delete" id="submit" type="submit">
+	<span class="glyphicon glyphicon-trash" aria-hidden="true"></span>Delete</button>
+	</form>
+	<button class="btn btn-default delete"> 
+		<a href = "{{url_for('showCatalog')}}">
+		<span class="glyphicon glyphicon-remove" aria-hidden="true"></span> Cancel</button>
+	</a>
 			</div>
 			<div class="col-md-1"></div>
 		</div>
