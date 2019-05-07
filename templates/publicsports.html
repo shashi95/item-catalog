@@ -6,14 +6,14 @@
 		<div class="col-md-1"></div>
 		<div class="col-md-10 sport-col">
 			<div class="col-md-3 col1 text-left">
-				<h3>Categories</h3>
+				<h3><u>Categories</u></h3>
 				{% for sport in sports %}
 				<a href = "{{url_for('showItem', sport_name = sport.name)}}">{{sport.name}}</a>
 				<br>
 				{% endfor %}
 			</div>
 			<div class="col-md-7 col2 text-left">
-				<h3>Latest Items</h3>
+				<h3><u>Latest Items</u></h3>
 				{% for item in items %}
 				<a href = "{{url_for('showItemDescription', sport_name = item.sport_name, item_name = item.name)}}">{{item.name}}<span style="color:grey">({{item.sport_name}})</span></a>
 				<br>

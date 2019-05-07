@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine, desc
+from sqlalchemy.orm.exc import NoResultFound
 from database_setup import Base, SportCatagory, Item
 from flask import session as login_session
 from sqlalchemy.orm import sessionmaker
@@ -139,8 +140,7 @@ def showItem(sport_name):
 #Show item description for given item
 @app.route('/catalog/<string:sport_name>/<string:item_name>')
 def showItemDescription(sport_name, item_name):
-	sport = session.query(SportCatagory).filter_by(name=sport_name).one()
-	item = session.query(Item).filter_by(name=item_name).one()
+	item = session.query(Item).filter_by(name=item_name).filter_by(sport_name=sport_name).one()
 	if 'username' not in login_session:
 		return render_template('publicitemdescription.html', item=item)
 	else:
@@ -153,21 +153,28 @@ def newItem():
         return redirect('/login')
     if request.method == 'POST':
 		sport_name = str(request.form.get('category'))
-		print(sport_name)
 		sport  = session.query(SportCatagory).filter_by(name=sport_name).one()
-		newItem = Item(name=request.form['name'], description=request.form['description'], time_updated = datetime.now(), sport=sport)
-		session.add(newItem)
-		session.commit()
-		flash('New Item %s Item Successfully Created' % (newItem.name))
+		item_name = request.form['name']
+		if item_name == '':
+			flash("Item name can not be empty!!")
+			return redirect(url_for('showCatalog'))
+		result = session.query(Item).filter_by(sport_name=sport_name).filter_by(name=item_name).first()
+		if result == None:
+			newItem = Item(name = item_name, description=request.form['description'], time_updated = datetime.now(), sport=sport)
+			session.add(newItem)
+			session.commit()
+			flash('New Item %s Item Successfully Created' % (newItem.name))
+		else:
+			flash("Item with same name already exists in this sport catagory")
  		return redirect(url_for('showCatalog'))
     else:
         return render_template('newitem.html')
 
 
 #Edit item
-@app.route('/catalog/<string:item_name>/edit', methods=['GET', 'POST'])
-def editItem(item_name):
-    editedItem = session.query(Item).filter_by(name=item_name).one()
+@app.route('/catalog/<string:sport_name>/<string:item_name>/edit', methods=['GET', 'POST'])
+def editItem(sport_name, item_name):
+    editedItem = session.query(Item).filter_by(name=item_name).filter_by(sport_name=sport_name).one()
     if 'username' not in login_session:
         return redirect('/login')
     if request.method == 'POST':
@@ -185,9 +192,9 @@ def editItem(item_name):
         return render_template('edititems.html', item=editedItem)
 
 
-@app.route('/catalog/<string:item_name>/delete', methods=['GET', 'POST'])
-def deleteItem(item_name):
-    itemToDelete = session.query(Item).filter_by(name=item_name).one()
+@app.route('/catalog/<string:sport_name>/<string:item_name>/delete', methods=['GET', 'POST'])
+def deleteItem(sport_name, item_name):
+    itemToDelete = session.query(Item).filter_by(name=item_name).filter_by(sport_name=sport_name).one()
     if 'username' not in login_session:
         return redirect('/login')
     if request.method == 'POST':
@@ -213,7 +220,6 @@ def disconnect():
         del login_session['email']
         del login_session['picture']
         del login_session['provider']
-        flash("You have successfully been logged out.")
         return redirect(url_for('showCatalog'))
     else:
         flash("You were not logged in")
@@ -245,20 +251,22 @@ def gdisconnect():
 
 @app.route('/catalogs/JSON')
 def catalogsJSON():
-    sports = session.query(SportCatagory).all()
-    items = session.query(Item).all()
-    catalogsJSONobject = catalogObject(sports, items)
-    return jsonify(sports=[r.serialize for r in sports])
+	sports = session.query(SportCatagory).all()
+	items = session.query(Item).all()
+	result = []
+	for sport in sports:
+		itemlist = [item for item in items if item.sport_name == sport.name]
+		result.append(serialize(sport, itemlist))
+	return jsonify(Category=result)
 
-# User Helper Functions
-class catalogObject:
 
-	def __init__(self, sports, items):
-		self.sports = sports
-		self.items = items
-
-	def getDetails():
-		
+def serialize(sport, items):
+	i = [{'id': item.id, 'title': item.name , 'description': item.description, 'cat_id': sport.id} for item in items]
+	return {
+		'id': sport.id,
+		'name': sport.name,
+		'Item': i
+	}
 
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'

@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-import datatime
+from datetime import datetime
 from database_setup import SportCatagory, Base, Item
 
 engine = create_engine('sqlite:///sports.db')
@@ -32,13 +32,13 @@ session.add(item1)
 session.commit()
 
 item2 = Item( name="ThreeShingaurds", description="Two Shingaurds description",
-       time_updated = datetime.datetime.now, sport=Sport1)
+       time_updated = datetime.now(), sport=Sport1)
 
 session.add(item2)
 session.commit()
 
 item3 = Item( name="FourShingaurds", description="Two Shingaurds description",
-       time_updated = datetime.datetime.now, sport=Sport1)
+       time_updated = datetime.now(), sport=Sport1)
 
 session.add(item3)
 session.commit()
