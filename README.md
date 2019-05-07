@@ -1,18 +1,18 @@
 # Project: Item Catalog
 
-#####What is this project?
+What is this project?
 
 We have several categories of sports and inside every sport, there are many items along with their description.
 There are two cases here:
 1. User not logged in: He can only view categories, items under each category and description of items. He will not be able to add, edit or delete things.
 2. User is logged in: In this case, he can add a new item where item name, description and category it belongs to are needed. Then he can edit this item and he can even delete it.
 
-####Set up system environment
+Set up system environment
 Use virtual box (https://github.com/udacity/fullstack-nanodegree-vm) to run this project. Follow below steps to do this:
 1. Clone above repo to local machine: git clone https://github.com/udacity/fullstack-nanodegree-vm
 2. Go inside vagrant folder
 3. Run command: $vagrant up
-4. Run command: #vagrant ssh
+4. Run command: $vagrant ssh
 you are inside vm now!
 
 Now, clone this (item-catalog) project inside fullstack-nanodegree-vm/vagrant because this is shared folder with vm /vagrant, we are doing this beacause we will be running in vm as everything will be already setup there.
